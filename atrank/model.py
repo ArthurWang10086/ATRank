@@ -222,14 +222,14 @@ class Model(object):
 
      
   def save(self, sess):
-    checkpoint_path = os.path.join(self.config['model_dir'].value, 'atrank')
-    saver = tf.train.Saver()
-    save_path = saver.save(
-        sess, save_path=checkpoint_path, global_step=self.global_step.eval())
-    json.dump(self.config,
-              open('%s-%d.json' % (checkpoint_path, self.global_step.eval()), 'w'),
-              indent=2)
-    print('model saved at %s' % save_path, flush=True)
+    # checkpoint_path = os.path.join(self.config['model_dir'].value, 'atrank')
+    # saver = tf.train.Saver()
+    # save_path = saver.save(
+    #     sess, save_path=checkpoint_path, global_step=self.global_step.eval())
+    # json.dump(self.config,
+    #           open('%s-%d.json' % (checkpoint_path, self.global_step.eval()), 'w'),
+    #           indent=2)
+    print('model saved at', flush=True)
 
   def restore(self, sess, path):
     saver = tf.train.Saver()

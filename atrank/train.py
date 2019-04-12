@@ -107,15 +107,15 @@ def train():
     user_count, item_count, cate_count = pickle.load(f)
 
   # Config GPU options
-  if FLAGS.per_process_gpu_memory_fraction == 0.0:
-    gpu_options = tf.GPUOptions(allow_growth=True)
-  elif FLAGS.per_process_gpu_memory_fraction == 1.0:
-    gpu_options = tf.GPUOptions()
-  else:
-    gpu_options = tf.GPUOptions(
-        per_process_gpu_memory_fraction=FLAGS.per_process_gpu_memory_fraction)
+  # if FLAGS.per_process_gpu_memory_fraction == 0.0:
+  #   gpu_options = tf.GPUOptions(allow_growth=True)
+  # elif FLAGS.per_process_gpu_memory_fraction == 1.0:
+  #   gpu_options = tf.GPUOptions()
+  # else:
+  #   gpu_options = tf.GPUOptions(
+  #       per_process_gpu_memory_fraction=FLAGS.per_process_gpu_memory_fraction)
 
-  os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.cuda_visible_devices
+  # os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.cuda_visible_devices
 
   # Build Config
   config = OrderedDict(sorted(FLAGS.__flags.items()))
@@ -127,8 +127,8 @@ def train():
 
 
   # Initiate TF session
-  with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
-
+  # with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
+  with tf.Session() as sess:
     # Create a new model or reload existing checkpoint
     model = create_model(sess, config, cate_list)
     print('Init finish.\tCost time: %.2fs' % (time.time()-start_time),
