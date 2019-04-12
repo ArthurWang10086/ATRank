@@ -47,7 +47,7 @@ for reviewerID, hist in reviews_df.groupby('reviewerID'):
 random.shuffle(train_set)
 random.shuffle(test_set)
 
-assert len(test_set) == user_count
+# assert len(test_set) == user_count
 # assert(len(test_set) + len(train_set) // 2 == reviews_df.shape[0])
 
 with open('dataset.pkl', 'wb') as f:
