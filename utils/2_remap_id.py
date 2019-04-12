@@ -8,7 +8,7 @@ if __name__ =='__main__':
   random.seed(1234)
 
   # with open('../raw_data/nsh_trainset_2019-04-01.txt', 'r') as f:
-  reviews_df = pd.read_csv('../raw_data/nsh_trainset_2019-04-01.txt2')
+  reviews_df = pd.read_csv('../raw_data/nsh_trainset_2019-04-01.txt')
   reviews_df = reviews_df[['reviewerID', 'asin', 'unixReviewTime']]
   # with open('../raw_data/meta.pkl', 'r') as f:
   meta_df = pd.read_csv('../raw_data/meta.txt')
