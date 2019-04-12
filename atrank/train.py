@@ -50,8 +50,9 @@ tf.app.flags.DEFINE_float('per_process_gpu_memory_fraction', 0.0, 'Gpu memory us
 FLAGS = tf.app.flags.FLAGS
 
 def create_model(sess, config, cate_list):
-
-  print(json.dumps(config, indent=4), flush=True)
+  print(config)
+  # print(config['model_dir'].value)
+  # print(json.dumps(config, indent=4), flush=True)
   model = Model(config, cate_list)
 
   print('All global variables:')

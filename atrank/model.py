@@ -8,8 +8,8 @@ class Model(object):
     self.config = config
 
     # Summary Writer
-    self.train_writer = tf.summary.FileWriter(config['model_dir'] + '/train')
-    self.eval_writer = tf.summary.FileWriter(config['model_dir'] + '/eval')
+    self.train_writer = tf.summary.FileWriter(config['model_dir'].value + '/train')
+    self.eval_writer = tf.summary.FileWriter(config['model_dir'].value + '/eval')
 
     # Building network
     self.init_placeholders()
@@ -46,14 +46,14 @@ class Model(object):
   def build_model(self, cate_list):
     item_emb_w = tf.get_variable(
         "item_emb_w",
-        [self.config['item_count'], self.config['itemid_embedding_size']])
+        [self.config['item_count'], self.config['itemid_embedding_size'].value])
     item_b = tf.get_variable(
         "item_b",
         [self.config['item_count'],],
         initializer=tf.constant_initializer(0.0))
     cate_emb_w = tf.get_variable(
         "cate_emb_w",
-        [self.config['cate_count'], self.config['cateid_embedding_size']])
+        [self.config['cate_count'], self.config['cateid_embedding_size'].value])
     cate_list = tf.convert_to_tensor(cate_list, dtype=tf.int64)
 
     i_emb = tf.concat([
@@ -67,20 +67,20 @@ class Model(object):
         tf.nn.embedding_lookup(cate_emb_w, tf.gather(cate_list, self.hist_i)),
         ], 2)
 
-    if self.config['concat_time_emb'] == True:
+    if self.config['concat_time_emb'].value == True:
       t_emb = tf.one_hot(self.hist_t, 12, dtype=tf.float32)
       h_emb = tf.concat([h_emb, t_emb], -1)
-      h_emb = tf.layers.dense(h_emb, self.config['hidden_units'])
+      h_emb = tf.layers.dense(h_emb, self.config['hidden_units'].value)
     else:
       t_emb = tf.layers.dense(tf.expand_dims(self.hist_t, -1),
-                              self.config['hidden_units'],
+                              self.config['hidden_units'].value,
                               activation=tf.nn.tanh)
       h_emb += t_emb
 
 
-    num_blocks = self.config['num_blocks']
-    num_heads = self.config['num_heads']
-    dropout_rate = self.config['dropout']
+    num_blocks = self.config['num_blocks'].value
+    num_heads = self.config['num_heads'].value
+    dropout_rate = self.config['dropout'].value
     num_units = h_emb.get_shape().as_list()[-1]
 
     u_emb, self.att, self.stt = attention_net(
@@ -116,7 +116,7 @@ class Model(object):
         tf.nn.sigmoid_cross_entropy_with_logits(
             logits=self.logits,
             labels=self.y)
-        ) + self.config['regulation_rate'] * l2_norm
+        ) + self.config['regulation_rate'].value * l2_norm
 
     self.train_summary = tf.summary.merge([
         tf.summary.histogram('embedding/1_item_emb', item_emb_w),
@@ -133,11 +133,11 @@ class Model(object):
   def init_optimizer(self):
     # Gradients and SGD update operation for training the model
     trainable_params = tf.trainable_variables()
-    if self.config['optimizer'] == 'adadelta':
+    if self.config['optimizer'].value == 'adadelta':
       self.opt = tf.train.AdadeltaOptimizer(learning_rate=self.lr)
-    elif self.config['optimizer'] == 'adam':
+    elif self.config['optimizer'].value == 'adam':
       self.opt = tf.train.AdamOptimizer(learning_rate=self.lr)
-    elif self.config['optimizer'] == 'rmsprop':
+    elif self.config['optimizer'].value == 'rmsprop':
       self.opt = tf.train.RMSPropOptimizer(learning_rate=self.lr)
     else:
       self.opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr)
@@ -147,7 +147,7 @@ class Model(object):
 
     # Clip gradients by a given maximum_gradient_norm
     clip_gradients, _ = tf.clip_by_global_norm(
-        gradients, self.config['max_gradient_norm'])
+        gradients, self.config['max_gradient_norm'].value)
 
     # Update the model
     self.train_op = self.opt.apply_gradients(
@@ -222,7 +222,7 @@ class Model(object):
 
      
   def save(self, sess):
-    checkpoint_path = os.path.join(self.config['model_dir'], 'atrank')
+    checkpoint_path = os.path.join(self.config['model_dir'].value, 'atrank')
     saver = tf.train.Saver()
     save_path = saver.save(
         sess, save_path=checkpoint_path, global_step=self.global_step.eval())
