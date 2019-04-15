@@ -149,6 +149,7 @@ def train():
     start_time, avg_loss, best_auc = time.time(), 0.0, 0.0
     for _ in range(FLAGS.max_epochs):
       num = 0
+      avg_loss = 0.0
       random.shuffle(train_set)
 
       for _, uij in DataInput(train_set, FLAGS.train_batch_size):
@@ -157,14 +158,14 @@ def train():
         step_loss = model.train(sess, uij, lr, add_summary=add_summary)
         avg_loss += step_loss
         num = num+1
-        print('avg_loss',avg_loss/num)
+        print(num,'avg_loss',avg_loss/num)
         if model.global_step.eval() % FLAGS.eval_freq == 0:
           test_auc = _eval(sess, test_set, model)
           print('Epoch %d Global_step %d\tTrain_loss: %.4f\tEval_AUC: %.4f' %
                 (model.global_epoch_step.eval(), model.global_step.eval(),
                  avg_loss / FLAGS.eval_freq, test_auc),
                 flush=True)
-          avg_loss = 0.0
+
 
           # if test_auc > 0.88 and test_auc > best_auc:
             # best_auc = test_auc
