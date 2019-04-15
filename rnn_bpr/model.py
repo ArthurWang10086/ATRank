@@ -6,77 +6,101 @@ from tensorflow.python.ops.rnn_cell import MultiRNNCell
 
 class Model(object):
 
-  def __init__(self, user_count, item_count, cate_count, cate_list):
+  def __init__(self, user_count, config):
 
     self.u = tf.placeholder(tf.int32, [None,]) # [B]
     self.i = tf.placeholder(tf.int32, [None,]) # [B]
+    self.i_week = tf.placeholder(tf.int32, [None,]) # [B]
+    self.i_daygap = tf.placeholder(tf.int32, [None,]) # [B]
     self.j = tf.placeholder(tf.int32, [None,]) # [B]
+    self.j_week = tf.placeholder(tf.int32, [None,]) # [B]
+    self.j_daygap = tf.placeholder(tf.int32, [None,]) # [B]
     self.y = tf.placeholder(tf.float32, [None,]) # [B]
     self.hist_i = tf.placeholder(tf.int32, [None, None]) # [B, T]
+    self.hist_i_week = tf.placeholder(tf.int32, [None, None]) # [B, T]
+    self.hist_i_daygap = tf.placeholder(tf.int32, [None, None]) # [B, T]
     self.sl = tf.placeholder(tf.int32, [None,]) # [B]
     self.lr = tf.placeholder(tf.float64, [])
 
     hidden_units = 128
+    self.config=config
+    item_count = self.config['embedding_len'][0]
+    week_count = self.config['embedding_len'][1]
+    daygap_count = self.config['embedding_len'][2]
 
     user_emb_w = tf.get_variable("user_emb_w", [user_count, hidden_units])
     item_emb_w = tf.get_variable("item_emb_w", [item_count, hidden_units // 2])
     item_b = tf.get_variable("item_b", [item_count],
                              initializer=tf.constant_initializer(0.0))
-    cate_emb_w = tf.get_variable("cate_emb_w", [cate_count, hidden_units // 2])
-    cate_list = tf.convert_to_tensor(cate_list, dtype=tf.int64)
+    week_emb_w = tf.get_variable("week_emb_w", [week_count, hidden_units // 4])
+    daygap_emb_w = tf.get_variable("daygap_emb_w", [daygap_count, hidden_units // 4])
+    # cate_list = tf.convert_to_tensor(cate_list, dtype=tf.int64)
 
     u_emb = tf.nn.embedding_lookup(user_emb_w, self.u)
 
-    ic = tf.gather(cate_list, self.i)
+    # ic = tf.gather(cate_list, self.i)
     i_emb = tf.concat([
         tf.nn.embedding_lookup(item_emb_w, self.i),
-        tf.nn.embedding_lookup(cate_emb_w, ic),
+        tf.nn.embedding_lookup(week_emb_w, self.i_week),
+        tf.nn.embedding_lookup(daygap_emb_w, self.i_daygap),
         ], 1)
     i_b = tf.gather(item_b, self.i)
 
-    jc = tf.gather(cate_list, self.j)
+    # jc = tf.gather(cate_list, self.j)
     j_emb = tf.concat([
         tf.nn.embedding_lookup(item_emb_w, self.j),
-        tf.nn.embedding_lookup(cate_emb_w, jc),
+        tf.nn.embedding_lookup(week_emb_w, self.j_week),
+        tf.nn.embedding_lookup(daygap_emb_w, self.j_daygap),
         ], 1)
     j_b = tf.gather(item_b, self.j)
 
-    hc = tf.gather(cate_list, self.hist_i)
+    # hc = tf.gather(cate_list, self.hist_i)
     h_emb = tf.concat([
         tf.nn.embedding_lookup(item_emb_w, self.hist_i),
-        tf.nn.embedding_lookup(cate_emb_w, hc),
+        tf.nn.embedding_lookup(week_emb_w, self.hist_i_week),
+        tf.nn.embedding_lookup(daygap_emb_w, self.hist_i_daygap),
         ], 2)
+
+    '''
+    # uni-directional rnn
+    # rnn_output, _ = tf.nn.dynamic_rnn(
+    #     build_cell(hidden_units), h_emb, self.sl, dtype=tf.float32)
+
+    hist = extract_axis_1(rnn_output, self.sl-1)
+    # u_emb = tf.concat([u_emb, hist], axis=1)
+    '''
 
     cell_fw = build_cell(hidden_units)
     cell_bw = build_cell(hidden_units)
     rnn_output, _ = tf.nn.bidirectional_dynamic_rnn(
         cell_fw, cell_bw, h_emb, self.sl, dtype=tf.float32)
-    rnn_output = tf.concat(rnn_output, 2)
-
-    hist = vanilla_attention(i_emb, rnn_output, self.sl)
-    hist = tf.reshape(hist, [-1, hidden_units * 2])
+    hist = tf.concat([
+        extract_axis_1(rnn_output[0], self.sl-1),
+        tf.reshape(rnn_output[1][:, 0, :], [-1, hidden_units]),
+        ], axis=1)
     hist = tf.layers.dense(hist, hidden_units)
 
     u_emb = hist
 
+    # MF predict: u_i > u_j
     x = i_b - j_b + tf.reduce_sum(tf.multiply(u_emb, (i_emb - j_emb)), 1) # [B]
     self.logits = i_b + tf.reduce_sum(tf.multiply(u_emb, i_emb), 1)
     self.mf_auc = tf.reduce_mean(tf.to_float(x > 0))
 
     # logits for all item:
-    all_emb = tf.concat([
-        item_emb_w,
-        tf.nn.embedding_lookup(cate_emb_w, cate_list)
-        ], axis=1)
-    self.logits_all = tf.sigmoid(
-        item_b + tf.matmul(u_emb, all_emb, transpose_b=True))
+    # all_emb = tf.concat([
+    #     item_emb_w,
+    #     tf.nn.embedding_lookup(cate_emb_w, cate_list)
+    #     ], axis=1)
+    # self.logits_all = tf.sigmoid(item_b + \
+    #     tf.matmul(u_emb, all_emb, transpose_b=True))
 
     # Step variable
     self.global_step = tf.Variable(0, trainable=False, name='global_step')
     self.global_epoch_step = \
         tf.Variable(0, trainable=False, name='global_epoch_step')
     self.global_epoch_step_op = \
-        tf.assign(self.global_epoch_step, self.global_epoch_step+1)
+	  tf.assign(self.global_epoch_step, self.global_epoch_step+1)
 
     # Loss
     l2_norm = tf.add_n([
@@ -103,9 +127,13 @@ class Model(object):
     loss, _ = sess.run([self.loss, self.train_op], feed_dict={
         self.u: uij[0],
         self.i: uij[1],
-        self.y: uij[2],
-        self.hist_i: uij[3],
-        self.sl: uij[4],
+        self.i_week: uij[2],
+        self.i_daygap: uij[3],
+        self.y: uij[4],
+        self.hist_i: uij[5],
+        self.hist_i_week: uij[6],
+        self.hist_i_daygap: uij[7],
+        self.sl: uij[8],
         self.lr: l,
         })
     return loss
@@ -114,22 +142,29 @@ class Model(object):
     u_auc = sess.run(self.mf_auc, feed_dict={
         self.u: uij[0],
         self.i: uij[1],
-        self.j: uij[2],
-        self.hist_i: uij[3],
-        self.sl: uij[4],
+        self.i_week: uij[2],
+        self.i_daygap: uij[3],
+        self.j: uij[4],
+        self.j_week: uij[5],
+        self.j_daygap: uij[6],
+        self.hist_i: uij[7],
+        self.hist_i_week: uij[8],
+        self.hist_i_daygap: uij[9],
+        self.sl: uij[10],
         })
     return u_auc
 
-  def test(self, sess, uid, hist_i, sl):
-    return sess.run(self.logits_all, feed_dict={
-        self.u: uid,
-        self.hist_i: hist_i,
-        self.sl: sl,
-        })
+  # def test(self, sess, uid, hist_i, sl):
+  #   return sess.run(self.logits_all, feed_dict={
+  #       self.u: uid,
+  #       self.hist_i: hist_i,
+  #       self.sl: sl,
+  #       })
 
   def save(self, sess, path):
-    saver = tf.train.Saver()
-    saver.save(sess, save_path=path)
+    pass
+    # saver = tf.train.Saver()
+    # saver.save(sess, save_path=path)
 
   def restore(self, sess, path):
     saver = tf.train.Saver()
@@ -150,31 +185,3 @@ def build_single_cell(hidden_units):
 def build_cell(hidden_units, depth=1):
   cell_list = [build_single_cell(hidden_units) for i in range(depth)]
   return MultiRNNCell(cell_list)
-
-def vanilla_attention(queries, keys, keys_length):
-  '''
-    queries:     [B, H]
-    keys:        [B, T, H]
-    keys_length: [B]
-  '''
-  queries = tf.tile(queries, [1, 2])
-  queries = tf.expand_dims(queries, 1) # [B, 1, H]
-  # Multiplication
-  outputs = tf.matmul(queries, tf.transpose(keys, [0, 2, 1])) # [B, 1, T]
-
-  # Mask
-  key_masks = tf.sequence_mask(keys_length, tf.shape(keys)[1])   # [B, T]
-  key_masks = tf.expand_dims(key_masks, 1) # [B, 1, T]
-  paddings = tf.ones_like(outputs) * (-2 ** 32 + 1)
-  outputs = tf.where(key_masks, outputs, paddings)  # [B, 1, T]
-
-  # Scale
-  outputs = outputs / (keys.get_shape().as_list()[-1] ** 0.5)
-
-  # Activation
-  outputs = tf.nn.softmax(outputs)  # [B, 1, T]
-
-  # Weighted sum
-  outputs = tf.matmul(outputs, keys)  # [B, 1, H]
-
-  return outputs

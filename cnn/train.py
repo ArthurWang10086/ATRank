@@ -135,7 +135,7 @@ def train():
           flush=True)
 
     # Eval init AUC
-    # print('Init AUC: %.4f' % _eval(sess, test_set, model))
+    print('Init AUC: %.4f' % _eval(sess, test_set, model))
 
     # Start training
     lr = FLAGS.learning_rate
