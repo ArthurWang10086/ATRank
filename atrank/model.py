@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 class Model(object):
-  def __init__(self, config, cate_list):
+  def __init__(self, config):
     self.config = config
 
     # Summary Writer
@@ -13,7 +13,7 @@ class Model(object):
 
     # Building network
     self.init_placeholders()
-    self.build_model(cate_list)
+    self.build_model()
     self.init_optimizer()
 
 
@@ -23,15 +23,19 @@ class Model(object):
 
     # [B] item id
     self.i = tf.placeholder(tf.int32, [None,])
+    self.i_week = tf.placeholder(tf.int32, [None,])
+    self.i_daygap = tf.placeholder(tf.int32, [None,])
 
     # [B] item label
     self.y = tf.placeholder(tf.float32, [None,])
 
     # [B, T] user's history item id
     self.hist_i = tf.placeholder(tf.int32, [None, None])
+    self.hist_i_week = tf.placeholder(tf.int32, [None, None])
+    self.hist_i_daygap = tf.placeholder(tf.int32, [None, None])
 
     # [B, T] user's history item purchase time
-    self.hist_t = tf.placeholder(tf.int32, [None, None])
+    # self.hist_t = tf.placeholder(tf.int32, [None, None])
 
     # [B] valid length of `hist_i`
     self.sl = tf.placeholder(tf.int32, [None,])
@@ -43,39 +47,48 @@ class Model(object):
     self.is_training = tf.placeholder(tf.bool, [])
 
 
-  def build_model(self, cate_list):
+  def build_model(self):
+    item_count = self.config['embedding_len'][0]
+    week_count = self.config['embedding_len'][1]
+    daygap_count = self.config['embedding_len'][2]
+
     item_emb_w = tf.get_variable(
         "item_emb_w",
-        [self.config['item_count'], self.config['itemid_embedding_size'].value])
+        [item_count, self.config['itemid_embedding_size'].value])
     item_b = tf.get_variable(
         "item_b",
-        [self.config['item_count'],],
+        [item_count,],
         initializer=tf.constant_initializer(0.0))
-    cate_emb_w = tf.get_variable(
-        "cate_emb_w",
-        [self.config['cate_count'], self.config['cateid_embedding_size'].value])
-    cate_list = tf.convert_to_tensor(cate_list, dtype=tf.int64)
+    week_emb_w = tf.get_variable(
+        "week_emb_w",
+        [week_count, self.config['weekid_embedding_size'].value])
+    daygap_emb_w = tf.get_variable(
+        "daygap_emb_w",
+        [daygap_count, self.config['daygapid_embedding_size'].value])
+    # cate_list = tf.convert_to_tensor(cate_list, dtype=tf.int64)
 
     i_emb = tf.concat([
         tf.nn.embedding_lookup(item_emb_w, self.i),
-        tf.nn.embedding_lookup(cate_emb_w, tf.gather(cate_list, self.i)),
+        tf.nn.embedding_lookup(week_emb_w, self.i_week),
+        tf.nn.embedding_lookup(daygap_emb_w, self.i_daygap),
         ], 1)
     i_b = tf.gather(item_b, self.i)
 
     h_emb = tf.concat([
         tf.nn.embedding_lookup(item_emb_w, self.hist_i),
-        tf.nn.embedding_lookup(cate_emb_w, tf.gather(cate_list, self.hist_i)),
+        tf.nn.embedding_lookup(week_emb_w, self.hist_i_week),
+        tf.nn.embedding_lookup(daygap_emb_w, self.hist_i_daygap),
         ], 2)
 
-    if self.config['concat_time_emb'].value == True:
-      t_emb = tf.one_hot(self.hist_t, 12, dtype=tf.float32)
-      h_emb = tf.concat([h_emb, t_emb], -1)
-      h_emb = tf.layers.dense(h_emb, self.config['hidden_units'].value)
-    else:
-      t_emb = tf.layers.dense(tf.expand_dims(self.hist_t, -1),
-                              self.config['hidden_units'].value,
-                              activation=tf.nn.tanh)
-      h_emb += t_emb
+    # if self.config['concat_time_emb'].value == True:
+    #   t_emb = tf.one_hot(self.hist_t, 12, dtype=tf.float32)
+    #   h_emb = tf.concat([h_emb, t_emb], -1)
+    #   h_emb = tf.layers.dense(h_emb, self.config['hidden_units'].value)
+    # else:
+    #   t_emb = tf.layers.dense(tf.expand_dims(self.hist_t, -1),
+    #                           self.config['hidden_units'].value,
+    #                           activation=tf.nn.tanh)
+    #   h_emb += t_emb
 
 
     num_blocks = self.config['num_blocks'].value
@@ -120,9 +133,10 @@ class Model(object):
 
     self.train_summary = tf.summary.merge([
         tf.summary.histogram('embedding/1_item_emb', item_emb_w),
-        tf.summary.histogram('embedding/2_cate_emb', cate_emb_w),
-        tf.summary.histogram('embedding/3_time_raw', self.hist_t),
-        tf.summary.histogram('embedding/3_time_dense', t_emb),
+        tf.summary.histogram('embedding/2_week_emb', week_emb_w),
+        tf.summary.histogram('embedding/3_daygap_emb', daygap_emb_w),
+        # tf.summary.histogram('embedding/4_time_raw', self.hist_t),
+        # tf.summary.histogram('embedding/3_time_dense', t_emb),
         tf.summary.histogram('embedding/4_final', h_emb),
         tf.summary.histogram('attention_output', u_emb),
         tf.summary.scalar('L2_norm Loss', l2_norm),
@@ -155,15 +169,18 @@ class Model(object):
 
 
 
-  def train(self, sess, uij, l, add_summary=False):
+  def train(self, sess, uij, l, add_summary=True):
 
     input_feed = {
         self.u: uij[0],
         self.i: uij[1],
-        self.y: uij[2],
-        self.hist_i: uij[3],
-        self.hist_t: uij[4],
-        self.sl: uij[5],
+        self.i_week: uij[2],
+        self.i_daygap: uij[3],
+        self.y: uij[4],
+        self.hist_i: uij[5],
+        self.hist_i_week: uij[6],
+        self.hist_i_daygap: uij[7],
+        self.sl: uij[8],
         self.lr: l,
         self.is_training: True,
         }
@@ -178,6 +195,7 @@ class Model(object):
     if add_summary:
       self.train_writer.add_summary(
           outputs[2], global_step=self.global_step.eval())
+    # print(outputs)
 
     return outputs[0]
 
@@ -185,39 +203,45 @@ class Model(object):
     res1 = sess.run(self.eval_logits, feed_dict={
         self.u: uij[0],
         self.i: uij[1],
-        self.hist_i: uij[3],
-        self.hist_t: uij[4],
-        self.sl: uij[5],
+        self.i_week: uij[2],
+        self.i_daygap: uij[3],
+        self.hist_i: uij[7],
+        self.hist_i_week: uij[8],
+        self.hist_i_daygap: uij[9],
+        self.sl: uij[10],
         self.is_training: False,
         })
     res2 = sess.run(self.eval_logits, feed_dict={
         self.u: uij[0],
-        self.i: uij[2],
-        self.hist_i: uij[3],
-        self.hist_t: uij[4],
-        self.sl: uij[5],
+        self.i: uij[4],
+        self.i_week: uij[5],
+        self.i_daygap: uij[6],
+        self.hist_i: uij[7],
+        self.hist_i_week: uij[8],
+        self.hist_i_daygap: uij[9],
+        self.sl: uij[10],
         self.is_training: False,
         })
     return np.mean(res1 - res2 > 0)
 
-  def test(self, sess, uij):
-    res1, att_1, stt_1 = sess.run([self.eval_logits, self.att, self.stt], feed_dict={
-        self.u: uij[0],
-        self.i: uij[1],
-        self.hist_i: uij[3],
-        self.hist_t: uij[4],
-        self.sl: uij[5],
-        self.is_training: False,
-        })
-    res2, att_2, stt_2 = sess.run([self.eval_logits, self.att, self.stt], feed_dict={
-        self.u: uij[0],
-        self.i: uij[2],
-        self.hist_i: uij[3],
-        self.hist_t: uij[4],
-        self.sl: uij[5],
-        self.is_training: False,
-        })
-    return res1, res2, att_1, stt_1, att_2, stt_1
+  # def test(self, sess, uij):
+  #   res1, att_1, stt_1 = sess.run([self.eval_logits, self.att, self.stt], feed_dict={
+  #       self.u: uij[0],
+  #       self.i: uij[1],
+  #       self.hist_i: uij[3],
+  #       self.hist_t: uij[4],
+  #       self.sl: uij[5],
+  #       self.is_training: False,
+  #       })
+  #   res2, att_2, stt_2 = sess.run([self.eval_logits, self.att, self.stt], feed_dict={
+  #       self.u: uij[0],
+  #       self.i: uij[2],
+  #       self.hist_i: uij[3],
+  #       self.hist_t: uij[4],
+  #       self.sl: uij[5],
+  #       self.is_training: False,
+  #       })
+  #   return res1, res2, att_1, stt_1, att_2, stt_1
 
 
      
