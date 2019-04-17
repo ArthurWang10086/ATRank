@@ -19,32 +19,32 @@ class Model(object):
 
   def init_placeholders(self):
     # [B] user id
-    self.u = tf.placeholder(tf.int32, [None,])
+    self.u = tf.placeholder(tf.int32, [None,],name='u')
 
     # [B] item id
-    self.i = tf.placeholder(tf.int32, [None,])
-    self.i_week = tf.placeholder(tf.int32, [None,])
-    self.i_daygap = tf.placeholder(tf.int32, [None,])
+    self.i = tf.placeholder(tf.int32, [None,],name='i')
+    self.i_week = tf.placeholder(tf.int32, [None,],name='i_week')
+    self.i_daygap = tf.placeholder(tf.int32, [None,],name='i_daygap')
 
     # [B] item label
-    self.y = tf.placeholder(tf.float32, [None,])
+    self.y = tf.placeholder(tf.float32, [None,],name='y')
 
     # [B, T] user's history item id
-    self.hist_i = tf.placeholder(tf.int32, [None, None])
-    self.hist_i_week = tf.placeholder(tf.int32, [None, None])
-    self.hist_i_daygap = tf.placeholder(tf.int32, [None, None])
+    self.hist_i = tf.placeholder(tf.int32, [None, None],name='hist_i')
+    self.hist_i_week = tf.placeholder(tf.int32, [None, None],name='hist_i_week')
+    self.hist_i_daygap = tf.placeholder(tf.int32, [None, None],name='hist_i_daygap')
 
     # [B, T] user's history item purchase time
     # self.hist_t = tf.placeholder(tf.int32, [None, None])
 
     # [B] valid length of `hist_i`
-    self.sl = tf.placeholder(tf.int32, [None,])
+    self.sl = tf.placeholder(tf.int32, [None,],name='sl')
 
     # learning rate
-    self.lr = tf.placeholder(tf.float64, [])
+    self.lr = tf.placeholder(tf.float64, [],name='lr')
 
     # whether it's training or not
-    self.is_training = tf.placeholder(tf.bool, [])
+    self.is_training = tf.placeholder(tf.bool, [],name='is_training')
 
 
   def build_model(self):
@@ -107,7 +107,7 @@ class Model(object):
         self.is_training,
         False)
 
-    self.logits = i_b + tf.reduce_sum(tf.multiply(u_emb, i_emb), 1)
+    self.logits = tf.identity(i_b + tf.reduce_sum(tf.multiply(u_emb, i_emb), 1),name='logits')
 
     # ============== Eval ===============
     self.eval_logits = self.logits
