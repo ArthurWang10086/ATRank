@@ -68,8 +68,8 @@ def create_model(sess, config):
     print('Reloading model parameters..', flush=True)
     model.restore(sess, ckpt.model_checkpoint_path)
   else:
-    if not os.path.exists(FLAGS.model_dir):
-      os.makedirs(FLAGS.model_dir)
+    if os.path.exists(FLAGS.model_dir):
+      os.rmdir(FLAGS.model_dir)
     print('Created new model parameters..', flush=True)
     sess.run(tf.global_variables_initializer())
     sess.run(tf.local_variables_initializer())
@@ -136,7 +136,6 @@ def train():
     model = create_model(sess, config)
     print('Init finish.\tCost time: %.2fs' % (time.time()-start_time),
           flush=True)
-
     # Eval init AUC
     print('Init AUC: %.4f' % _eval(sess, test_set, model))
 
@@ -167,9 +166,9 @@ def train():
                 flush=True)
 
 
-          # if test_auc > 0.88 and test_auc > best_auc:
-            # best_auc = test_auc
-          #   model.save(sess)
+          if test_auc > best_auc:
+            best_auc = test_auc
+            model.save(sess)
 
         if model.global_step.eval() == 336000:
           lr = 0.1

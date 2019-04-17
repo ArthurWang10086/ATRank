@@ -246,14 +246,24 @@ class Model(object):
 
      
   def save(self, sess):
+      if os.path.exists(self.config['model_dir'].value):
+          os.rmdir(self.config['model_dir'].value)
+      with sess.graph.as_default():
+          builder = tf.saved_model.builder.SavedModelBuilder(self.config['model_dir'].value)
+          # signature_def_map = self._build_signature_def()
+          builder.add_meta_graph_and_variables(
+              sess, [tf.saved_model.tag_constants.SERVING])
+          builder.save()
+
+
     # checkpoint_path = os.path.join(self.config['model_dir'].value, 'atrank')
     # saver = tf.train.Saver()
     # save_path = saver.save(
     #     sess, save_path=checkpoint_path, global_step=self.global_step.eval())
-    # json.dump(self.config,
-    #           open('%s-%d.json' % (checkpoint_path, self.global_step.eval()), 'w'),
-    #           indent=2)
-    print('model saved at', flush=True)
+    # # json.dump(self.config,
+    # #           open('%s-%d.json' % (checkpoint_path, self.global_step.eval()), 'w'),
+    # #           indent=2)
+    # print('model saved at',save_path, flush=True)
 
   def restore(self, sess, path):
     saver = tf.train.Saver()

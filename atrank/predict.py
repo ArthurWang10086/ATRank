@@ -1,10 +1,8 @@
 import tensorflow as tf
 if __name__ == '__main__':
     filename =''
-    modelname =''
-    datas = open(filename,'r').read().split('\n')
+    modelname ='save_path1'
     items_count = 62
-
     with tf.Session() as sess:
         tf.saved_model.loader.load(sess,[tf.saved_model.tag_constants.SERVING],export_dir=modelname)
         u_t=tf.get_default_graph().get_tensor_by_name('u')
@@ -17,7 +15,7 @@ if __name__ == '__main__':
         sl_t=tf.get_default_graph().get_tensor_by_name('sl')
         is_training_t=tf.get_default_graph().get_tensor_by_name('is_training')
         logits_t=tf.get_default_graph().get_tensor_by_name('logits')
-
+        datas = open(filename,'r').read().split('\n')
         for data in datas :
             u = [data.split(' ')[0]]*items_count
             i = list(range(1,items_count+1))
