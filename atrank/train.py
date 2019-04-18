@@ -68,9 +68,9 @@ def create_model(sess, config):
     print('Reloading model parameters..', flush=True)
     model.restore(sess, ckpt.model_checkpoint_path)
   else:
-    if os.path.exists(FLAGS.model_dir.value):
+    if os.path.exists(FLAGS.model_dir):
       import shutil
-      shutil.rmtree(FLAGS.model_dir.value, ignore_errors=True)
+      shutil.rmtree(FLAGS.model_dir, ignore_errors=True)
     print('Created new model parameters..', flush=True)
     sess.run(tf.global_variables_initializer())
     sess.run(tf.local_variables_initializer())
