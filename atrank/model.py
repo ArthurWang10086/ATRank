@@ -247,7 +247,8 @@ class Model(object):
      
   def save(self, sess):
       if os.path.exists(self.config['model_dir'].value):
-          os.rmdir(self.config['model_dir'].value)
+          import shutil
+          shutil.rmtree(self.config['model_dir'].value, ignore_errors=True)
       with sess.graph.as_default():
           builder = tf.saved_model.builder.SavedModelBuilder(self.config['model_dir'].value)
           # signature_def_map = self._build_signature_def()
