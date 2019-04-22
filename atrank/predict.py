@@ -42,4 +42,4 @@ if __name__ == '__main__':
                 sl_t: sl,
                 is_training_t: False,
             })
-            print(str(u[0])+' '+','.join(map(str,res),file=f_out))
+            print(str(u[0])+' '+','.join(map(str,res)),file=f_out)
