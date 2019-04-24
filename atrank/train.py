@@ -131,12 +131,9 @@ def train():
 
 
   # Initiate TF session
-  config = tf.ConfigProto(device_count={"CPU": 1},
-                          inter_op_parallelism_threads = 1,
-                          intra_op_parallelism_threads = 1,
-                          log_device_placement=True)
+
   # with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
-  with tf.Session(config=config) as sess:
+  with tf.Session() as sess:
     # Create a new model or reload existing checkpoint
     model = create_model(sess, config)
     print('Init finish.\tCost time: %.2fs' % (time.time()-start_time),

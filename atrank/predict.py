@@ -6,7 +6,11 @@ if __name__ == '__main__':
     modelname ='save_path1'
     items_count = 62
     f_out = open(outputname,'w')
-    with tf.Session() as sess:
+    config = tf.ConfigProto(device_count={"CPU": 1},
+                            inter_op_parallelism_threads = 1,
+                            intra_op_parallelism_threads = 1,
+                            log_device_placement=True)
+    with tf.Session(config=config) as sess:
         tf.saved_model.loader.load(sess,[tf.saved_model.tag_constants.SERVING],export_dir=modelname)
         u_t=tf.get_default_graph().get_tensor_by_name('u:0')
         i_t=tf.get_default_graph().get_tensor_by_name('i:0')
