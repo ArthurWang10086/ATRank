@@ -47,4 +47,6 @@ if __name__ == '__main__':
                 sl_t: sl,
                 is_training_t: False,
             })
-            print(str(u[0])+' '+week+' '+','.join(map(str,res)),file=f_out)
+            import numpy as np
+            score = [np.log(z)-np.log(1-z) for z in res]
+            print(str(u[0])+' '+week+' '+','.join(map(str,score)),file=f_out)
