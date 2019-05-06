@@ -1,7 +1,7 @@
 import tensorflow as tf
 import sys
 if __name__ == '__main__':
-    filename ='../raw_data/nsh_task_predictset_%s.txt2'%(sys.argv[1])
+    filename ='../raw_data/nsh_task_predictset_%s.txt3'%(sys.argv[1])
     outputname = 'predict_%s.txt'%(sys.argv[1])
     modelname ='save_path1'
     items_count = 62
@@ -27,7 +27,8 @@ if __name__ == '__main__':
             data=data.replace(', ',',')
             u = [data.split(' ')[0]]*items_count
             i = list(range(1,items_count+1))
-            i_week = [data.split(' ')[2].split(':')[1]]*items_count
+            week = data.split(' ')[2].split(':')[1]
+            i_week = [week]*items_count
             i_daygap = [0]*items_count
             hist = data.split(' ')[1].split(',')
             hist_i = [[x.split(':')[0] for x in hist]]*items_count
@@ -46,4 +47,4 @@ if __name__ == '__main__':
                 sl_t: sl,
                 is_training_t: False,
             })
-            print(str(u[0])+' '+','.join(map(str,res)),file=f_out)
+            print(str(u[0])+' '+week+' '+','.join(map(str,res)),file=f_out)
