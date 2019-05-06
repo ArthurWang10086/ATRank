@@ -48,5 +48,5 @@ if __name__ == '__main__':
                 is_training_t: False,
             })
             import numpy as np
-            score = [np.log(z)-np.log(1-z) for z in res]
+            score = [np.exp(z)/(np.exp(z)+1) for z in res]
             print(str(u[0])+' '+week+' '+','.join(map(str,score)),file=f_out)
