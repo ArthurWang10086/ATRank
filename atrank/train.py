@@ -36,8 +36,8 @@ tf.app.flags.DEFINE_string('optimizer', 'sgd', 'Optimizer for training: (adadelt
 tf.app.flags.DEFINE_float('learning_rate', 1.0, 'Learning rate')
 tf.app.flags.DEFINE_float('max_gradient_norm', 5.0, 'Clip gradients to this norm')
 
-tf.app.flags.DEFINE_integer('train_batch_size', 32, 'Training Batch size')
-tf.app.flags.DEFINE_integer('test_batch_size', 128, 'Testing Batch size')
+tf.app.flags.DEFINE_integer('train_batch_size', 128, 'Training Batch size')
+tf.app.flags.DEFINE_integer('test_batch_size', 1024, 'Testing Batch size')
 tf.app.flags.DEFINE_integer('max_epochs', 10, 'Maximum # of training epochs')
 
 tf.app.flags.DEFINE_integer('display_freq', 1000, 'Display training status every this iteration')
@@ -139,7 +139,7 @@ def train():
     print('Init finish.\tCost time: %.2fs' % (time.time()-start_time),
           flush=True)
     # Eval init AUC
-    print('Init AUC: %.4f' % _eval(sess, test_set, model))
+    # print('Init AUC: %.4f' % _eval(sess, test_set, model))
 
     # Start training
     lr = FLAGS.learning_rate
