@@ -10,7 +10,7 @@ if __name__ == '__main__':
     reviews_df = open(filename,'r').read().split('\n')[1:]
     # reviews_df = pd.read_csv(filename,sep=' ')
     user_count=len(set([x.split(' ')[0] for x in reviews_df]))
-    cate_count=item_count=62
+    cate_count=item_count=66
     example_count=len(reviews_df)
     print(user_count,item_count,example_count)
 
@@ -19,8 +19,10 @@ if __name__ == '__main__':
     test_set = []
     for i in range(len(reviews_df)):
         data=reviews_df[i].replace(', ',',').split(' ')
-        if int(data[0])%11>3:
+        if int(data[0])%11>-1:
             train_set.append((data[0], data[1].split(','), data[2], data[3]))
+            if data[2].split(':')[0] in (1,'1'):
+                print(data[2].split(':')[0])
         else:
             if int(data[3])>0:
                 pos = data[2].split(':')
@@ -70,7 +72,7 @@ if __name__ == '__main__':
 
     # assert len(test_set) == user_count
     # assert(len(test_set) + len(train_set) // 2 == reviews_df.shape[0])
-    embedding_item_len = 63 #1-62
+    embedding_item_len = 67 #1-62
     embedding_week_len = 7  #0-6
     embedding_daygap_len = 15  #1-14
 

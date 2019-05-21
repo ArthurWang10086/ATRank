@@ -1,10 +1,11 @@
 import tensorflow as tf
 import sys
 if __name__ == '__main__':
-    filename ='../raw_data/nsh_task_predictset_%s.txt3'%(sys.argv[1])
+    filename ='../raw_data/nsh_task_predictset_%s.txt'%(sys.argv[1])
     outputname = 'predict_%s.txt'%(sys.argv[1])
+    week_id = int(sys.argv[2])
     modelname ='save_path1'
-    items_count = 62
+    items_count = 66
     f_out = open(outputname,'w')
     config = tf.ConfigProto(device_count={"CPU": 1},
                             inter_op_parallelism_threads = 1,
@@ -27,7 +28,8 @@ if __name__ == '__main__':
             data=data.replace(', ',',')
             u = [data.split(' ')[0]]*items_count
             i = list(range(1,items_count+1))
-            week = data.split(' ')[2].split(':')[1]
+            # week = data.split(' ')[2].split(':')[1]
+            week = str(week_id)
             i_week = [week]*items_count
             i_daygap = [0]*items_count
             hist = data.split(' ')[1].split(',')
