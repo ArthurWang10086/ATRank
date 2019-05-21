@@ -19,12 +19,10 @@ if __name__ == '__main__':
     test_set = []
     for i in range(len(reviews_df)):
         data=reviews_df[i].replace(', ',',').split(' ')
-        if int(data[0])%11>-1:
+        if int(data[0])%11>3:
             train_set.append((data[0], data[1].split(','), data[2], data[3]))
-            if data[2].split(':')[0] in (1,'1'):
-                print(data[2].split(':')[0])
         else:
-            if int(data[3])>0:
+            if int(data[3])>0 and int(data[0])%11<=3:
                 pos = data[2].split(':')
                 neg = str(random.randint(0, item_count-1)+1)
                 test_set.append((data[0], data[1].split(','), (data[2],':'.join([neg,pos[1],pos[2]]))))
