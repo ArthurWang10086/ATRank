@@ -6,7 +6,7 @@ import pandas as pd
 if __name__ == '__main__':
 
     random.seed(1234)
-    filename='../raw_data/nsh_trainset_2019-04-01.txt'
+    filename='../raw_data/nsh_trainset_2019-05-16.txt'
     reviews_df = open(filename,'r').read().split('\n')[1:]
     # reviews_df = pd.read_csv(filename,sep=' ')
     user_count=len(set([x.split(' ')[0] for x in reviews_df]))
