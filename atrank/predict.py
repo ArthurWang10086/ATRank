@@ -35,7 +35,7 @@ if __name__ == '__main__':
             i_daygap = [0]*items_count
             hist = data.split(' ')[1].split(',')
             hist_tmp = [y.split(':')[0] for y in hist if y.split(':')[1]==week]
-            print(hist_tmp)
+            # print(hist_tmp)
             hist_count = dict(zip(Counter(hist_tmp).keys(),Counter(hist_tmp).values()))
 
             hist_i = [[x.split(':')[0] for x in hist]]*items_count
@@ -56,5 +56,6 @@ if __name__ == '__main__':
                 is_training_t: False,
             })
             import numpy as np
-            score = [np.exp(res[z])/(np.exp(res[z])+1)+float(hist_count[z-1])/10.0 if int(z) in hist_count else np.exp(res[z])/(np.exp(res[z])+1) for z in range(len(res))]
+            print(hist_count)
+            score = [np.exp(res[z])/(np.exp(res[z])+1)+float(hist_count[z-1]) if int(z) in hist_count else 0.0 for z in range(len(res))]
             print(str(u[0])+' '+week+' '+','.join(map(str,score)),file=f_out)
