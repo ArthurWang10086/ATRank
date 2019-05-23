@@ -56,6 +56,6 @@ if __name__ == '__main__':
                 is_training_t: False,
             })
             import numpy as np
-            print(hist_count)
-            score = [np.exp(res[z])/(np.exp(res[z])+1)+float(hist_count[z-1]) if str(z) in hist_count else 0.0 for z in range(len(res))]
+            # print(hist_count)
+            score = [np.exp(res[z])/(np.exp(res[z])+1)+float(hist_count[str(z+1)])/10.0 if str(z+1) in hist_count else np.exp(res[z])/(np.exp(res[z])+1) for z in range(len(res))]
             print(str(u[0])+' '+week+' '+','.join(map(str,score)),file=f_out)
