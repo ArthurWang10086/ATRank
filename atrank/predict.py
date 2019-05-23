@@ -1,10 +1,11 @@
 import tensorflow as tf
 import sys
+from collections import Counter
 if __name__ == '__main__':
     filename ='../raw_data/nsh_task_predictset_%s.txt'%(sys.argv[1])
-    outputname = 'predict_%s.txt'%(sys.argv[1])
+    outputname = 'predict_%s_%s.txt'%(sys.argv[1],sys.argv[2])
     week_id = int(sys.argv[2])
-    modelname ='save_path1'
+    modelname ='save_path'
     items_count = 66
     f_out = open(outputname,'w')
     config = tf.ConfigProto(device_count={"CPU": 1},
@@ -33,9 +34,13 @@ if __name__ == '__main__':
             i_week = [week]*items_count
             i_daygap = [0]*items_count
             hist = data.split(' ')[1].split(',')
+            hist_tmp = [y.split(':')[0] for y in hist if y.split(':')[1]==week]
+            hist_count = dict(zip(Counter(hist_tmp).keys(),Counter(hist_tmp).values()))
+
             hist_i = [[x.split(':')[0] for x in hist]]*items_count
             hist_i_week = [[x.split(':')[1] for x in hist]]*items_count
-            hist_i_daygap = [[int((int(data.split(' ')[2].split(':')[2]) - int(x.split(':')[2]))/3600.0/24) for x in hist]]*items_count
+            now_day = int(data.split(' ')[2].split(':')[2])
+            hist_i_daygap = [[int((now_day - int(x.split(':')[2]))/3600.0/24) for x in hist]]*items_count
             sl = [len(hist)]*items_count
         
             res = sess.run(logits_t, feed_dict={
@@ -50,5 +55,5 @@ if __name__ == '__main__':
                 is_training_t: False,
             })
             import numpy as np
-            score = [np.exp(z)/(np.exp(z)+1) for z in res]
+            score = [np.exp(res[z])/(np.exp(res[z])+1)+float(hist_count[z-1])/10.0 if str(z) in hist_count else 0.0 for z in range(len(res))]
             print(str(u[0])+' '+week+' '+','.join(map(str,score)),file=f_out)
