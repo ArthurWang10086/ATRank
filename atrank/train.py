@@ -82,7 +82,7 @@ def _eval(sess, test_set, model):
   auc_sum = 0.0
   for _, uij in DataInputTest(test_set, FLAGS.test_batch_size):
     auc_sum += model.eval(sess, uij) * len(uij[0])
-    # print(auc_sum)
+    print(auc_sum)
   test_auc = auc_sum / len(test_set)
   print('test_auc',test_auc)
 
@@ -161,6 +161,7 @@ def train():
         num = num+1
         print(num,'avg_loss',avg_loss/num)
         if model.global_step.eval() % FLAGS.eval_freq == 0:
+          model.save(sess)
           test_auc = _eval(sess, test_set, model)
           print('Epoch %d Global_step %d\tTrain_loss: %.4f\tEval_AUC: %.4f' %
                 (model.global_epoch_step.eval(), model.global_step.eval(),

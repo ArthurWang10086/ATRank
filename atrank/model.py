@@ -41,10 +41,10 @@ class Model(object):
     self.sl = tf.placeholder(tf.int32, [None,],name='sl')
 
     # learning rate
-    self.lr = tf.placeholder(tf.float64, [],name='lr')
+    self.lr = tf.placeholder_with_default(0.01,tf.float64, [],name='lr')
 
     # whether it's training or not
-    self.is_training = tf.placeholder(tf.bool, [],name='is_training')
+    self.is_training = tf.placeholder_with_default(False ,tf.bool, [],name='is_training')
 
 
   def build_model(self):
@@ -251,9 +251,15 @@ class Model(object):
           shutil.rmtree(self.config['model_dir'].value, ignore_errors=True)
       with sess.graph.as_default():
           builder = tf.saved_model.builder.SavedModelBuilder(self.config['model_dir'].value)
-          # signature_def_map = self._build_signature_def()
+          inputs = {'u': tf.saved_model.utils.build_tensor_info(self.u), 'i': tf.saved_model.utils.build_tensor_info(self.i)
+              , 'i_week': tf.saved_model.utils.build_tensor_info(self.i_week), 'i_daygap': tf.saved_model.utils.build_tensor_info(self.i_daygap)
+              , 'hist_i': tf.saved_model.utils.build_tensor_info(self.hist_i), 'hist_i_week': tf.saved_model.utils.build_tensor_info(self.hist_i_week)
+              , 'hist_i_daygap': tf.saved_model.utils.build_tensor_info(self.hist_i_daygap), 'sl': tf.saved_model.utils.build_tensor_info(self.sl)}
+          outputs = {'logits': tf.saved_model.utils.build_tensor_info(self.logits)}
+          method_name = tf.saved_model.signature_constants.PREDICT_METHOD_NAME
+          my_signature = tf.saved_model.signature_def_utils.build_signature_def(inputs, outputs, method_name)
           builder.add_meta_graph_and_variables(
-              sess, [tf.saved_model.tag_constants.SERVING])
+              sess, ['serve'], signature_def_map={'serving_default': my_signature})
           builder.save()
 
 
